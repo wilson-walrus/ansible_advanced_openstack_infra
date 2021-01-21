@@ -1,0 +1,76 @@
+---
+#### Base Example, create loop over a dictionary
+- name: Provision Multi Tier App Servers
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  vars:
+    instance_state: present
+    instance_list:
+      - name: app1
+        security_groups: apps
+        meta_group: app_servers
+        meta_deployment: QA
+      - name: app2
+        security_groups: apps 
+        meta_group: app_servers  
+        meta_deployment: dev
+      - name: appdb1
+        security_groups: db 
+        meta_group: database_servers 
+        meta_deployment: dev
+      - name: frontend1          
+        security_groups: frontend 
+        meta_group: load_balancers
+        meta_deployment: dev
+
+  tasks:
+  
+    - name: Create instances
+      os_server:
+        cloud:            "{{ __instance_list.cloud     | default('openstack') }}"
+        name:             "{{ __instance_list.name }}"
+        image:            "{{ __instance_list.image     | default('rhel-7.6') }}"
+        key_name:         "{{ __instance_list.key_name  | default('ansible_ssh_key') }}"
+        flavor:           "{{ __instance_list.flavor    | default('m2.medium') }}"
+        security_groups:  "{{ __instance_list.security_groups }}"
+        delete_fip: yes
+        state:            "{{ instance_state            | default('present') }}"
+        wait: no
+        nics:
+          - net-name:     "{{ __instance_list.net_name  | default('int_network') }}"
+        meta: "group={{ __instance_list.meta_group }},deployment_name={{ __instance_list.meta_deployment }}"
+        userdata: |
+          #!/bin/bash
+          curl -o /tmp/openstack.pub http://www.opentlc.com/download/ansible_bootcamp/openstack_keys/openstack.pub
+          cat /tmp/openstack.pub >> /home/cloud-user/.ssh/authorized_keys
+      loop: "{{ instance_list }}"
+      loop_control:
+        loop_var: __instance_list
+      async: 900
+      poll: 0
+      register: r_instances
+
+    ## Wait for systems to finish provisioning before attempting to assign floating ip 
+    ## some services may not yet be fully launched
+    - name: Wait for async OSP instance creation to complete
+      async_status: "jid={{ item.ansible_job_id }}"
+      register: r_wait
+      until: r_wait.finished
+      retries: 900
+      loop: "{{ r_instances.results }}"
+
+    - when: instance_state == "present"
+      name: Add floating IP to instance
+      os_floating_ip:
+        cloud: openstack
+        state: present
+        reuse: yes
+        server: "{{ __fip_assign.name }}"
+        network: ext_network
+        wait: true
+        timeout: 200
+      loop: "{{ instance_list }}"
+      loop_control:
+        loop_var: __fip_assign

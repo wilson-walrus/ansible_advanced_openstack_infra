@@ -1,0 +1,28 @@
+---
+- name: add repos to provisioned environment
+  hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    repo_files:
+      - src: base_repos 
+        dest: base_repos.repo
+      - src: database_repos
+        dest: database_repos.repo
+  tasks:
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "/etc/yum.repos.d/{{ item.dest }}" 
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ repo_files }}"
+
+    - name: add IP for db to hosts file for app1
+      lineinfile:
+        path: /etc/hosts
+        insertafter: EOF
+        line: "{{ hostvars['appdb1']['ansible_default_ipv4']['address'] }} appdb1"
+      when: ansible_hostname == 'app1' or ansible_hostname == 'app2'
+

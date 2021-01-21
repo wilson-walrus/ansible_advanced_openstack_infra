@@ -1,0 +1,23 @@
+---
+- name: Set up in-mem inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Fetch Instance Info
+      os_server_info:
+        cloud: openstack
+        region_name: regionOne
+      register: r_os_servers
+
+    - debug:
+        msg: "{{ r_os_servers.openstack_servers }}"
+
+    - name: Add host
+      add_host:
+        name: "{{ item.public_v4 }}"
+        group:
+          - "{{ item.metadata.group }}"
+          - "{{ item.metadata.deployment_name }}"
+      loop: "{{ r_os_servers.openstack_servers }}"
