@@ -2,16 +2,16 @@
 - name: Create instances
   os_server:
     cloud: openstack
-    name: "{{ __server_create.instance_name	 																 }}" 
-    image: "{{ __server_create.image 																				 }}"
-    key_name: "{{ __server_create.key_name 						| default('ansible_ssh_key') }}"
-    flavor: "{{ __server_create.flavor 							| default('m2.medium') 			 }}"
-    security_groups: "{{ __server_create.security_group_name 													 }}"
-    state: "{{ openstack_server_state | default('present') }}"
+    name:             "{{ __server_create.instance_name	 																   }}" 
+    image:            "{{ __server_create.image 																				   }}"
+    key_name:         "{{ __server_create.key_name 						| default('ansible_ssh_key') }}"
+    flavor:           "{{ __server_create.flavor 							| default('m2.medium') 			 }}"
+    security_groups:  "{{ __server_create.security_group_name 													   }}"
+    state:            "{{ openstack_server_state              | default('present')         }}"
     delete_fip: yes
     wait: no
     nics:
-      - net-name: "{{ __server_create.network 						| default('int_network') }}"
+      - net-name:     "{{ __server_create.network 						| default('int_network')     }}"
     meta: "group={{ __server_create.group }},deployment_name={{ __server_create.deployment }}"
     userdata: |
       #!/bin/bash
