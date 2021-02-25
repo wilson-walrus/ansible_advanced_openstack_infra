@@ -1,0 +1,18 @@
+[load_balancers]
+frontend1 ansible_host=192.0.2.176
+
+[app_servers]
+app1 ansible_host=192.0.2.161
+app2 ansible_host=192.0.2.183
+
+[database_servers]
+appdb1 ansible_host=192.0.2.195
+
+[all:vars]
+ansible_user=cloud-user
+ansible_ssh_private_key_file=~/.ssh/openstack.pem
+
+[internal:children]
+load_balancers
+app_servers
+database_servers

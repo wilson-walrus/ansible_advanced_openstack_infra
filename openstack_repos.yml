@@ -1,6 +1,27 @@
----
+---               
+- name: test in memory inventory
+  hosts: localhost
+  connection: local
+  become: false   
+  gather_facts: false
+  tasks:          
+                  
+    - name: Fetch Instance Info
+      os_server_info:
+        cloud: openstack
+        region_name: regionOne
+      register: r_os_servers
+                  
+    - name: Add host
+      add_host:   
+        name: "{{ item.public_v4 }}"
+        group:    
+          - "{{ item.metadata.group }}"
+          - "{{ item.metadata.deployment_name }}"
+      loop: "{{ r_os_servers.openstack_servers }}"
+
 - name: add repos to provisioned environment
-  hosts: all
+  hosts: all:!localhost
   gather_facts: true
   become: true
   vars:
@@ -23,6 +44,6 @@
       lineinfile:
         path: /etc/hosts
         insertafter: EOF
-        line: "{{ hostvars['appdb1']['ansible_default_ipv4']['address'] }} appdb1"
+        line: "{{ groups['database_servers'] }} appdb1"
       when: ansible_hostname == 'app1' or ansible_hostname == 'app2'
 
