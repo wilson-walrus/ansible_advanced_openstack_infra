@@ -44,6 +44,6 @@
       lineinfile:
         path: /etc/hosts
         insertafter: EOF
-        line: "{{ groups['database_servers'] }} appdb1"
+        line: "{{ groups['database_servers'][0] }} appdb1"
       when: ansible_hostname == 'app1' or ansible_hostname == 'app2'
 
